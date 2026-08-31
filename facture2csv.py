@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-facture2csv — Extrait les données clés de factures PDF et les exporte en CSV/Excel.
+facture2csv — Extracts key data from PDF invoices and exports it to CSV/Excel.
 
 Usage:
-    python facture2csv.py factures/*.pdf -o resultat.csv
-    python facture2csv.py factures/*.pdf -o resultat.xlsx
-    python facture2csv.py une_facture.pdf --verbose
+    python facture2csv.py invoices/*.pdf -o result.csv
+    python facture2csv.py invoices/*.pdf -o result.xlsx
+    python facture2csv.py one_invoice.pdf --verbose
 """
 
 import argparse
@@ -18,9 +18,9 @@ import pandas as pd
 import pdfplumber
 
 # ---------------------------------------------------------------------------
-# Patterns de reconnaissance (regex) — couvrent les formats de factures FR les
-# plus courants. Fait pour être étendu facilement : ajoute tes propres regex
-# ici si un format n'est pas bien détecté.
+# Recognition patterns (regex) — cover the most common French invoice
+# formats. Built to be easily extended: add your own regex here if a format
+# isn't detected well.
 # ---------------------------------------------------------------------------
 
 DATE_PATTERNS = [
@@ -47,9 +47,9 @@ TVA_PATTERNS = [
     r"(?:tva|montant\s*tva)\s*[:]*\s*([\d\s]+[.,]\d{2})\s*€?",
 ]
 
-# Le fournisseur est souvent la première ligne "solide" du document
-# (nom d'entreprise en haut de page). Heuristique simple : première ligne
-# non vide qui ne ressemble ni à une date ni à un mot-clé générique.
+# The supplier is often the first "solid" line of the document (company name
+# at the top of the page). Simple heuristic: first non-empty line that looks
+# neither like a date nor a generic keyword.
 SKIP_WORDS = ("facture", "invoice", "devis", "page", "date", "n°")
 
 
@@ -88,7 +88,7 @@ def guess_fournisseur(lines):
 
 
 def extract_from_pdf(path):
-    """Extrait les champs clés d'une facture PDF. Retourne un dict."""
+    """Extracts the key fields from a PDF invoice. Returns a dict."""
     with pdfplumber.open(path) as pdf:
         full_text = "\n".join(page.extract_text() or "" for page in pdf.pages)
 
@@ -107,7 +107,7 @@ def extract_from_pdf(path):
 
 
 def resolve_input_paths(patterns):
-    """Étend les patterns glob et dossiers en une liste de fichiers PDF."""
+    """Expands glob patterns and folders into a list of PDF files."""
     paths = []
     for pattern in patterns:
         p = Path(pattern)
@@ -116,7 +116,7 @@ def resolve_input_paths(patterns):
         else:
             expanded = glob.glob(pattern)
             paths.extend(Path(x) for x in sorted(expanded))
-    # dédoublonnage en conservant l'ordre
+    # deduplicate while preserving order
     seen = set()
     unique = []
     for p in paths:
@@ -128,29 +128,29 @@ def resolve_input_paths(patterns):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extrait les données de factures PDF vers un CSV ou Excel."
+        description="Extracts data from PDF invoices to a CSV or Excel file."
     )
     parser.add_argument(
         "inputs",
         nargs="+",
-        help="Fichier(s) PDF, dossier, ou pattern glob (ex: factures/*.pdf)",
+        help="PDF file(s), folder, or glob pattern (e.g. invoices/*.pdf)",
     )
     parser.add_argument(
         "-o", "--output",
-        default="resultat.csv",
-        help="Fichier de sortie (.csv ou .xlsx). Défaut : resultat.csv",
+        default="result.csv",
+        help="Output file (.csv or .xlsx). Default: result.csv",
     )
     parser.add_argument(
         "-v", "--verbose",
         action="store_true",
-        help="Affiche le détail de chaque facture traitée dans le terminal.",
+        help="Print details of each processed invoice to the terminal.",
     )
     args = parser.parse_args()
 
     pdf_paths = resolve_input_paths(args.inputs)
 
     if not pdf_paths:
-        print("Aucun fichier PDF trouvé pour ces arguments.", file=sys.stderr)
+        print("No PDF file found for these arguments.", file=sys.stderr)
         sys.exit(1)
 
     rows = []
@@ -162,12 +162,12 @@ def main():
             rows.append(row)
             if args.verbose:
                 print(f"✓ {path.name} → {row}")
-        except Exception as exc:  # noqa: BLE001 — on veut continuer sur erreur
+        except Exception as exc:  # noqa: BLE001 — keep going on error
             errors.append((path.name, str(exc)))
-            print(f"✗ Erreur sur {path.name} : {exc}", file=sys.stderr)
+            print(f"✗ Error on {path.name}: {exc}", file=sys.stderr)
 
     if not rows:
-        print("Aucune facture n'a pu être traitée.", file=sys.stderr)
+        print("No invoice could be processed.", file=sys.stderr)
         sys.exit(1)
 
     df = pd.DataFrame(rows)
@@ -178,16 +178,16 @@ def main():
     else:
         df.to_csv(output_path, index=False, encoding="utf-8-sig")
 
-    print(f"\n{len(rows)} facture(s) traitée(s) → {output_path}")
+    print(f"\n{len(rows)} invoice(s) processed → {output_path}")
     if errors:
-        print(f"{len(errors)} fichier(s) en erreur (voir ci-dessus).")
+        print(f"{len(errors)} file(s) failed (see above).")
 
-    # Petit résumé utile
+    # Small useful summary
     n_missing_ttc = df["montant_ttc"].isna().sum()
     if n_missing_ttc:
         print(
-            f"⚠ Montant TTC non détecté sur {n_missing_ttc} facture(s) "
-            "— vérifie manuellement ou ajoute un pattern regex adapté."
+            f"⚠ Total (TTC) amount not detected on {n_missing_ttc} invoice(s) "
+            "— check manually or add a matching regex pattern."
         )
 
 
