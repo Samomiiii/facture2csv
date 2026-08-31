@@ -1,17 +1,15 @@
-# facture2csv
+Automatically extracts key data from your PDF invoices (supplier, invoice number, date, HT/VAT/TTC amounts) and exports them to a CSV or Excel file ready to import into your accounting software.
 
-Extrait automatiquement les données clés de tes factures PDF (fournisseur, numéro, date, montants HT/TVA/TTC) et les exporte dans un fichier CSV ou Excel prêt à importer dans ta compta.
+No more manual re-entry invoice by invoice.
 
-Fini la ressaisie manuelle facture par facture.
-
-## Exemple
+## Example
 
 ```bash
 python facture2csv.py factures/*.pdf -o resultat.csv
 ```
 
-**Entrée** : un dossier de PDF de factures
-**Sortie** (`resultat.csv`) :
+**Input**: a folder of invoice PDFs
+**Output** (`resultat.csv`):
 
 | fichier | fournisseur | numero_facture | date | montant_ht | montant_tva | montant_ttc |
 |---|---|---|---|---|---|---|
@@ -24,52 +22,52 @@ python facture2csv.py factures/*.pdf -o resultat.csv
 pip install pdfplumber pandas openpyxl
 ```
 
-(`openpyxl` n'est nécessaire que si tu veux exporter en `.xlsx`.)
+(`openpyxl` is only needed if you want to export to `.xlsx`.)
 
-## Utilisation
+## Usage
 
 ```bash
-# Un seul fichier
+# A single file
 python facture2csv.py facture.pdf
 
-# Un dossier entier
+# An entire folder
 python facture2csv.py factures/ -o resultat.csv
 
-# Pattern glob
+# Glob pattern
 python facture2csv.py factures/*.pdf -o resultat.csv
 
-# Export Excel au lieu de CSV
+# Export to Excel instead of CSV
 python facture2csv.py factures/ -o resultat.xlsx
 
-# Mode verbeux (affiche chaque facture traitée)
+# Verbose mode (shows each invoice processed)
 python facture2csv.py factures/ --verbose
 ```
 
-## Comment ça marche
+## How it works
 
-Le script utilise `pdfplumber` pour extraire le texte brut de chaque PDF, puis des expressions régulières pour repérer :
-- le **fournisseur** (heuristique : première ligne pertinente en haut du document)
-- le **numéro de facture** (mots-clés : "Facture n°", "Invoice", "Référence"...)
-- la **date** (formats JJ/MM/AAAA et texte français)
-- les **montants HT / TVA / TTC** (mots-clés : "Total HT", "Total TTC", "Net à payer"...)
+The script uses `pdfplumber` to extract raw text from each PDF, then regular expressions to identify:
+- the **supplier** (heuristic: first relevant line at the top of the document)
+- the **invoice number** (keywords: "Facture n°", "Invoice", "Référence"...)
+- the **date** (DD/MM/YYYY formats and French text)
+- the **HT / VAT / TTC amounts** (keywords: "Total HT", "Total TTC", "Net à payer"...)
 
-Les factures scannées en image (sans texte sélectionnable) ne sont pas supportées pour l'instant — voir la section Limites.
+Scanned image invoices (without selectable text) are not currently supported — see the Limitations section.
 
-## Limites connues
+## Known limitations
 
-- Fonctionne sur des PDF avec texte sélectionnable (pas des scans image bruts).
-- Les regex couvrent les formats de factures français les plus courants — un format inhabituel peut nécessiter d'ajuster les patterns dans `facture2csv.py`.
-- Un seul fournisseur/numéro/montant par facture est extrait (pas de factures multi-pages avec plusieurs sous-totaux).
+- Works on PDFs with selectable text (not raw image scans).
+- The regex patterns cover the most common French invoice formats — an unusual format may require adjusting the patterns in `facture2csv.py`.
+- Only one supplier/number/amount is extracted per invoice (no multi-page invoices with several subtotals).
 
-## Contribuer
+## Contributing
 
-Les PR sont bienvenues, en particulier :
-- nouveaux patterns regex pour des formats de facture non reconnus
-- support de l'OCR pour les PDF scannés (ex: via `pytesseract`)
-- détection de la devise (actuellement suppose l'euro)
+PRs are welcome, especially for:
+- new regex patterns for unrecognized invoice formats
+- OCR support for scanned PDFs (e.g. via `pytesseract`)
+- currency detection (currently assumes euros)
 
-Ouvre une issue avec un exemple de facture (anonymisée) si un format n'est pas bien détecté.
+Open an issue with an example invoice (anonymized) if a format isn't detected well.
 
-## Licence
+## License
 
 MIT
